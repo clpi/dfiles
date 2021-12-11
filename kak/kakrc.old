@@ -1,0 +1,290 @@
+colorscheme chris
+set-option global ui_options   ncurses_assistant=off
+
+define-command comment %{
+    try %{
+        execute-keys _
+        comment-block
+    } catch comment-line
+}
+
+
+# comment lines
+# map global user c -docstring 'comment lines' %{: comment<ret>}
+#  save on pressing enter
+hook global NormalKey <ret> w
+hook global NormalKey <space> pick-buffers
+# hook global normal <space>j buffer-next
+# hook global normal <space>k buffer-previous
+#hook global NormalKey <c-k>jbuffer-next
+##
+# # remap grep-jump
+map global goto <ret> "<esc><ret>"
+map global normal D '<a-l>d' -docstring 'delete to end of line'
+map global normal Y '<a-l>y' -docstring 'yank to end of line'
+# case insensitive searc
+map global prompt <a-i> "<home>(?i)<end>"
+
+
+#   ___                              _
+#  / __|___ _ __  _ __  __ _ _ _  __| |___
+# | (__/ _ \ '  \| '  \/ _` | ' \/ _` (_-<
+#  \___\___/_|_|_|_|_|_\__,_|_||_\__,_/__/
+#
+
+define-command filetype-hook -params 2 %{
+    hook global WinSetOption "filetype=(%arg{1})" "%arg(2)"
+}
+
+
+define-command indent-spaces -params 1 %{
+    expandtab
+    set-option buffer indentwidth %arg(1)
+    set-option buffer softtabstop %arg(1)
+    set-option buffer tabstop %arg(1)
+}
+
+define-command indent-tabs -params 1 %{
+    noexpandtab
+    set-option buffer indentwidth %arg(1)
+    set-option buffer softtabstop %arg(1)
+    set-option buffer tabstop %arg(1)
+}
+
+define-command latex-preview %{
+    evaluate-commands %sh{
+        latex_outdir=$(mktemp -dp'/tmp' -d latex_outdir.XXXXX)
+
+        # FIXME: the weird printf formatting
+        printf 'hook -group latex-preview buffer BufWritePost %s %%{
+            nop %%sh{
+                (
+                    cp -r %s %s.bak &&
+                    pdflatex -output-directory %s %s ||
+                    (rm -rf %s && mv %s.bak %s); \
+                    rm -rf %s.bak
+                ) > /dev/null 2>&1 < /dev/null &
+            }
+        }' \
+        "${kak_buffile}" \
+        "${latex_outdir}" "${latex_outdir}" \
+        "${latex_outdir}" "${kak_buffile}" \
+        "${latex_outdir}" "${latex_outdir}" "${latex_outdir}" \
+        "${latex_outdir}"
+
+        (
+            pdflatex -output-directory "${latex_outdir}" "${kak_buffile}" &&
+            xdg-open "${latex_outdir}/$(basename ${kak_buffile} .tex).pdf" &&
+            rm -rf "${latex_outdir}" &&
+            printf 'remove-hooks buffer latex-preview'
+        ) > /dev/null 2>&1 < /dev/null &
+    }
+}
+
+# set-option global lsp_auto_highlight_references true
+#set-option global autoreload   yes
+# set-option global scrolloff    2,5
+# lsp-auto-hover-insert-mode-enable
+
+
+
+#  ___ _ _       ___              _  __ _
+# | __(_) |___  / __|_ __  ___ __(_)/ _(_)__
+# | _|| | / -_) \__ \ '_ \/ -_) _| |  _| / _|
+# |_| |_|_\___| |___/ .__/\___\__|_|_| |_\__|
+#                   |_|
+
+filetype-hook html|markdown|ocaml|gas|nim|latex %{ indent-spaces 2 }
+filetype-hook zig|javascript|haskell|python|rust|kak|c|fish|json %{ indent-spaces 4 }
+filetype-hook css %{ indent-tabs 4 }
+
+
+
+filetype-hook rust %{
+    set-option buffer formatcmd 'rustfmt'
+}
+
+filetype-hook c %{
+    set-option buffer formatcmd "clang-format -style='WebKit'"
+}
+
+filetype-hook haskell %{
+    set-option buffer lintcmd 'hlint'
+}
+
+
+filetype-hook latex %{
+    set-option buffer autowrap_column 80
+    autowrap-enable
+}
+
+filetype-hook markdown %{
+    set-option buffer autowrap_column 80
+    autowrap-enable
+}
+
+
+
+#  __  __                _
+# |  \/  |__ _ _ __ _ __(_)_ _  __ _ ___
+# | |\/| / _` | '_ \ '_ \ | ' \/ _` (_-<
+# |_|  |_\__,_| .__/ .__/_|_||_\__, /__/
+#             |_|  |_|         |___/
+
+map global user 'c' ': comment-line<ret>' -docstring 'comment line'
+map global user '<a-c>' ': comment-block<ret>' -docstring 'comment block'
+
+# System clipboard
+map global user 'y' '<a-|> wl-copy<ret>' -docstring 'copy to clipboard'
+map global user 'p' '<a-!> wl-paste<ret>' -docstring 'insert content from clipboard'
+map global user 'P' '! wl-paste<ret>' -docstring 'append content from clipboard'
+map global user 'R' '| wl-paste<ret>' -docstring 'replace selection with content in clipboard'
+
+
+#  ___ _           _
+# | _ \ |_  _ __ _(_)_ _  ___
+# |  _/ | || / _` | | ' \(_-<
+# |_| |_|\_,_\__, |_|_||_/__/
+#            |___/
+
+source "%val{config}/plugins/plug.kak/rc/plug.kak"
+plug "gustavo-hms/luar"
+plug "insipx/kak-crosshairs"
+
+plug "andreyorst/plug.kak" noload
+plug "andreyorst/smarttab.kak"
+plug "eraserhd/kak-ansi"
+plug "Delapouite/kakoune-select-view"
+plug "TeddyDD/explore.kak"
+plug "alexherbo2/auto-pairs.kak" config %{
+    auto-pairs-enable
+    # map global user 's' ': auto-pairs-surround <lt> <gt><ret>' -docstring 'Surround'
+    filetype-hook markdown %{
+        set-option -add buffer auto_pairs_surround _ _
+    }
+    filetype-hook latex|markdown %{
+        set-option -add buffer auto_pairs_surround $ $
+    }
+
+    filetype-hook zig %{
+        set-option -add buffer auto_pairs_surround | |
+    }
+}
+
+plug "occivink/kakoune-snippets" config %{
+    # unmap global insert '<c-i>'
+    map global insert '<a-i>' '<a-;>: snippets-select-next-placeholders<ret>'
+    filetype-hook rust %{
+        set-option buffer snippets_auto_expand true
+    }
+}
+plug "andreyorst/kakoune-snippet-collection"
+plug "jjk96/kakoune-extra-filetypes"
+plug "Delapouite/kakoune-buffers" %{
+    # map global user b ':enter-user-mode -lock buffers<ret>' -docstring 'buffers {lock}'
+}
+plug "occivink/kakoune-find"
+plug 'delapouite/kakoune-cd' %{
+        # Suggested aliases
+        alias global cdb change-directory-current-buffer
+        alias global cdr change-directory-project-root
+        alias global ecd edit-current-buffer-directory
+        alias global pwd print-working-directory
+}
+plug "andreyorst/fzf.kak" config %{
+    map global user 'f' ': fzf-mode<ret>' -docstring 'enter fzf mode'
+    # NOTE maybe broken???
+    # set-option global fzf_file_command 'rg'
+}
+plug 'alexherbo2/surround.kak' config %{
+     map global user s ': surround<ret>' -docstring 'Enter surround mode'
+     map global user S ': surround _ _ * *<ret>' -docstring 'Enter surround mode with extra surrounding pairs'
+}
+
+
+plug "ul/kak-lsp" do %{
+    cargo build --release --locked
+    cargo install --force --path .
+} config %{
+    # Turn off lsp when we exit kak
+         define-command ne -docstring 'go to next error/warning from lsp' %{
+        lsp-find-error --include-warnings
+    }
+
+    define-command pe -docstring 'go to previous error/warning from lsp' %{
+        lsp-find-error --previous --include-warnings
+    }
+
+    define-command ee -docstring 'go to current error/warning from lsp' %{
+        lsp-find-error --include-warnings; lsp-find-error --previous --include-warnings
+    }
+
+    define-command lsp-restart -docstring 'restart lsp server' %{ lsp-stop; lsp-start}
+
+     # Cleaner gutter symbols
+     set-option global lsp_diagnostic_line_error_sign ''
+     set-option global lsp_diagnostic_line_warning_sign ''
+
+    define-command lsp-restart -docstring 'restart the language server' %{ lsp-stop; lsp-start }
+
+
+     hook global KakEnd .* lsp-exit
+}
+plug 'jjk96/kakoune-rainbow' config %{
+    set-option global rainbow_faces red green yellow blue magenta cyan
+}
+
+hook global WinSetOption filetype=(rust|haskell|clojure|typescript|python) %{
+    lsp-enable-window
+    set-option window lsp_auto_highlight_references true
+    set-option window lsp_hover_anchor true
+    echo -debug "Enabling LSP for filetype %opt{filetype}"
+    set-option window lsp-auto-hover-enable true
+    set-option window lsp-auto-hover-insert-mode-enable true
+    set-option window lsp-auto-signature-help-enable true
+    set-option window lsp-diagnostic-lines-enable true
+    set-option window lsp-inline-diagnostics-enable true
+    set-option window lsp-auto-hover-enable true
+    # map window user 'l' ': enter-user-mode lsp<ret>' -docstring 'enter lsp mode'
+    # map window lsp 'R' ': lsp-rename-prompt<ret>' -docstring 'rename the symbol beneath the cursor'
+}
+
+plug "jdugan6240/powerline.kak" defer powerline %{
+    # set-option global powerline_format 'git bufname filetype position line_column'
+    # powerline-theme solarized-dark-termcolors
+# } config %{
+    # powerline-start
+}
+
+# crosshairs
+cursorline
+
+# colorscheme dract
+# k
+# colorscheme gruvbox
+# 
+hook global WinCreate ^[^*]+$ %{
+    add-highlighter window/ number-lines -relative
+    add-highlighter window/ show-whitespaces
+    add-highlighter global/ wrap -word -indent
+    add-highlighter window/ show-matching
+    # set-option global fzf_highlight_cmd 'bat'
+    add-highlighter window/ regex \b(TODO|FIXME|NOTE)\b 0:default+b
+    # auto-pairs-enable
+
+    # powerline-start
+    # set-option global powerline-theme solarized-dark-termcolors
+    # set-option global powerline-format git session bufname filetype position line_column
+    lsp-start
+    lsp-enable-window
+     lsp-auto-hover-insert-mode-enable
+    lsp-inline-diagnostics-enable
+    lsp-auto-signature-help-enable
+    lsp-auto-signature-help-enable
+    lsp-diagnostic-lines-enable
+    lsp-auto-hover-enable
+}
+
+
+
+

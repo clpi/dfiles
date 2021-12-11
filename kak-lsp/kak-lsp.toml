@@ -1,0 +1,109 @@
+verbosity = 2
+
+[language.crystal]
+filetypes = ["crystal"]
+roots = ["shard.yml"]
+command = "scry"
+
+[language.rust]
+filetypes = ["rust"]
+roots = ["Cargo.toml"]
+command = "rust-analyzer"
+settings_section = "rust-analyzer"
+
+[server]
+timeout = 1800
+
+[language.rust.settings.rust-analyzer]
+hoverActions.enable = true
+diagnostics.disabled = ["unresolved-proc-macro"]
+
+[language.javascript]
+filetypes = ["javascript"]
+roots = ["package.json"]
+command = "rome lsp"
+
+[language.typescript]
+filetypes = ["typescript"]
+roots = ["package.json"]
+command = "typescript-language-server"
+args = ["--stdio"]
+
+[language.svelte]
+filetypes = ["svelte"]
+roots = ["svelte.config.js"]
+command = "svelteserver"
+
+[language.zig]
+filetypeps = ["zig"]
+command = "zls"
+roots = ["build.zig"]
+
+[language.ruby]
+filetypes = ["ruby"]
+roots = ["Gemfile"]
+command = "solargraph"
+args = ["stdio"]
+
+[language.nim]
+filetypes = ["nim"]
+roots = ["*.nimble", ".git"]
+command = "nimlsp"
+args = ["path/to/nim/installation"] # optional (if installed from nimble or path wasn't provided at compiletime)
+
+[language.svelte]
+filetypes = ["svelte"]
+roots = ["package.json"]
+command = "svelteserver"
+args = ["--stdio"]
+
+
+# Semantic tokens
+#
+[[semantic_tokens]]
+token = "comment"
+face = "documentation"
+modifiers = ["documentation"]
+
+[[semantic_tokens]]
+token = "comment"
+face = "comment"
+#
+[[semantic_tokens]]
+token = "function"
+face = "function"
+#
+[[semantic_tokens]]
+token = "keyword"
+face = "keyword"
+#
+[[semantic_tokens]]
+token = "namespace"
+face = "module"
+
+[[semantic_tokens]]
+token = "operator"
+face = "operator"
+#
+[[semantic_tokens]]
+token = "string"
+face = "string"
+#
+[[semantic_tokens]]
+token = "type"
+face = "type"
+#
+[[semantic_tokens]]
+token = "variable"
+face = "default+d"
+modifiers = ["readonly"]
+
+[[semantic_tokens]]
+token = "variable"
+face = "default+d"
+modifiers = ["constant"]
+
+[[semantic_tokens]]
+token = "variable"
+face = "variable"
+

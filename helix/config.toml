@@ -1,0 +1,12 @@
+theme = "bogster"
+
+[editor]
+scrolloff = 5
+scroll-lines = 2
+mouse = true
+shell = ["zsh", "-c"]
+line-number = "relative" #absolute
+auto-pairs = true
+auto-completion = true
+completion-trigger-len = 1
+idle-timeout = 0
